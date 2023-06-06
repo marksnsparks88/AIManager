@@ -1,3 +1,8 @@
+"""
+An Logger for torch based machine learning projects. Currently tracks stats, numpy based arrays and model states.
+"""
+
+
 import matplotlib.pyplot as plt
 from matplotlib.cm import ScalarMappable as SM
 import numpy as np
@@ -8,7 +13,61 @@ import torch
 #TODO class ui():
 
 class Plots():
+    """
+    Class for polling logged data
+    
+    Attributes
+    ----------
+    root_dir : str
+        logged data root directory
+    logs : str
+        folder where the logs are stored
+    plots : str
+        folder for storing plot images
+    config : str
+        config file for matplotlib (currently not in use)
+    pyplot_config : Dict
+        matplotlib config data (currently not in use)
+    log_files : Dict
+        dict containing each log file name
+    plot_data : Dict
+        dictionary containing data to be plotted
+    pfig : matplotlib.pyplot.figure
+        pyplot figure for data plotting
+    pax : matplotlib.pyplot.axes
+        pyplot axes for data plotting
+    image_data : Dict
+        dictionary containing image data to be plotted
+    arr_fill : int
+        background fill
+    dt : numpy.dtype
+        data type for image data
+    dpi : int
+        dots per inch value for saving plots
+    bg_cmap : str
+        matplotlib color map for background
+    img_cmap : str
+        matplotlib color map for image data
+    img_arr : numpy.array
+        numpy array canvas for final image
+    imfig : matplotlib.pyplot.figure
+        pyplot figure for image
+    imax : matplotlib.pyplot.axes
+        pyplot axes for image
+    axim : matplotlib.pyplot.axes.imshow
+        pyplot image
+    """
     def __init__(self, root_dir='logs', config='plotcfg'):
+        """
+        Initailise plotting
+        
+        Parameters
+        ----------
+        root_dir : str
+            root directory of run to be plotted
+        config : str
+            config file for matplotlib.pyplot (currently not in use)
+        """
         self.root_dir = root_dir
         self.logs = self.root_dir+'/logs/'
         self.plots = self.root_dir+'/plots/'
@@ -46,6 +105,14 @@ class Plots():
         self.axim = self.imax.imshow(self.image_arr)
     
     def add_stat(self, key):
+        """
+        Add stat to be plotted
+        
+        Parameters
+        ----------
+        key : any
+            the key value for the stat that was logged
+        """
         self.plot_data[key]={}
         
         for i in self.log_files['stat'][key]:
@@ -58,6 +125,14 @@ class Plots():
         self.plot_data[key]['data'] = data.T[1].astype(np.float32)
     
     def add_data(self, key):
+        """
+        Add data to be plotted. takes a 1d array or a 2d array which gets flattened for each step.
+        
+        Parameters
+        ----------
+        key : any
+            the key value for the data that was logged
+        """
         self.plot_data[key]={}
         
         data = []
@@ -74,6 +149,14 @@ class Plots():
         self.plot_data[key]['data'] = data.T
         
     def plot_stats(self, save=False):
+        """
+        Displays a matplotlib pyplot of the stat or data that was added.
+        
+        Parameters
+        ----------
+        save : bool
+            save an image in plots
+        """
         stats = [i for i in self.plot_data.keys()]
         self.pax.clear()
         for stat in stats:
@@ -87,6 +170,26 @@ class Plots():
         self.pfig.show()       
     
     def add_image_data(self, key, posx, posy, scale=1, rot=0, mndx=None, cmap=None):
+        """
+        Add matrix to be displayed as an image
+        
+        Parameters
+        ----------
+        key : any
+            the key value for the data that was logged
+        posx : int
+            x position of the matrix in the image
+        posy : int
+            y position of the matrix in the image
+        scale : float
+            scale of the matrix in the image
+        rot : int
+            rotation of the matrix in the image. accepts 0, 90, 180, 270 
+            only.
+        mndx : List
+            if the matrix dimentions are greater than 2 list the index to
+            get a 2 dimentional slice.
+        """
         if mndx == None:
             mndx=''
         else:
@@ -106,6 +209,24 @@ class Plots():
                                                   'cmap': cmap}
     
     def update_image_transforms(self, key, posx=None, posy=None, scale=None, rot=None):
+        """
+        Update the image transforms
+        
+        Parameters
+        ----------
+        key : any
+            the key value for the data that was logged
+        posx : int
+            x position of the matrix in the image
+        posy : int
+            y position of the matrix in the image
+        scale : float
+            scale of the matrix in the image
+        rot : int
+            rotation of the matrix in the image. accepts 0, 90, 180, 270 
+            only.
+        
+        """
         if self.image_data.get(key):
             if posx != None:
                 self.image_data[key]['posx'] = posx
@@ -119,6 +240,18 @@ class Plots():
             print("object doesn't exist. available keys are: {}".format(self.self.image_data.keys()))
     
     def blit_image_data(self, key, ndx=0):
+        """
+        Blit image data to canvas.
+        
+        Parameters
+        ----------
+        key : any
+            the key value for the data that was logged
+            
+        ndx : int
+            the time step value  for the data that was logged
+        
+        """
         if self.image_data.get(key):
             mndx = None
             f_name = None
@@ -164,6 +297,17 @@ class Plots():
             print("object doesn't exist. available keys are: {}".format(self.image_data.keys()))
     
     def resize_image(self, width=None, height=None):
+        """
+        Resize the base canvas
+        
+        Parameters
+        ----------
+        
+        width : int
+            canvas width
+        height : int
+            canvas height
+        """
         if width != None and height != None:
             self.image_arr = np.full((height, width), self.arr_fill, dtype=self.dt)
         elif height != None:
@@ -172,6 +316,14 @@ class Plots():
             self.image_arr = np.full((self.image_arr.shape[0], width), self.arr_fill, dtype=self.dt)
     
     def render_image(self, ndx=None):
+        """
+        Display a single image of added image data
+        
+        Parameters
+        ----------
+        ndx : int
+            step to render
+        """
         self.image_arr = np.full((self.image_arr.shape[0], self.image_arr.shape[1]), self.arr_fill, dtype=self.dt)
         self.image_arr = SM(cmap=self.bg_cmap).to_rgba(self.image_arr)
         for k in self.image_data.keys():
@@ -181,6 +333,9 @@ class Plots():
         self.imfig.canvas.draw()
     
     def render_image_sequence(self):
+        """
+        Render and save the full sequence of time step of added image data
+        """
         steps = []
         ndx = []
         end = []
@@ -249,6 +404,37 @@ class Plots():
 
 
 class AIManager(Plots):
+    """
+    Main logger Class
+    
+    Attributes
+    ----------
+    models : Dict
+        Dictionary storing models
+    optimizers : Dict
+        Dictionary storing optimizers
+    stats : Dict
+        Dictionary storing stats
+    step : int
+        loop step
+    _step : int
+        previous loop step
+    update : Bool
+        lock to make sure log is only update once per loop
+    save_state_time : float
+        state time start
+    track_stat_time : float
+        stat time start
+    track_data_time : float
+        data time start
+    session_strt_str : str
+        session start as string
+    session_strt_int : int
+        session start as int
+    batch_size : int
+        batch size
+        
+    """
     def __init__(self, root_dir='logs', fresh=False, run=None, batch_size=None):
         """
         Initailise AIManager
@@ -333,7 +519,11 @@ class AIManager(Plots):
 
     def add_optimizers(self, **optim):
         """
-        Add optimizers being used in project
+        Add optimizers being used in project as key=value
+        
+        example
+        -------
+        log.add_optimizers(optmizer_name=optimizer)
         
         Returns
         -------
@@ -344,7 +534,11 @@ class AIManager(Plots):
     
     def add_models(self, **models):
         """
-        Add model being used in project
+        Add model being used in project as key=value
+        
+        example
+        -------
+        log.add_optimizers(model_name=model)
         
         Returns
         -------
@@ -361,9 +555,13 @@ class AIManager(Plots):
         ----------
         
         state : str
-        select a state to load. Logging directory is root/model_state.
-        If state is None it will try to load the latest from the logging
-        directory
+            select a state to load. Logging directory is root/model_states.
+            If state is None it will try to load the latest from the logging
+            directory
+            
+        Returns
+        -------
+        None
         """
         def load_model_states(data):
             if data != None:
@@ -414,8 +612,10 @@ class AIManager(Plots):
         Parameters
         ----------
         interval : int
+            interval in steps if tme is false or seconds if tme is true
         
         tme : bool
+            set to true if logging by time or false if logging by step
         """
         # state f_name = session start
         
@@ -477,10 +677,16 @@ class AIManager(Plots):
         Parameters
         ----------
         interval : int
+            interval in steps if tme is false or seconds if tme is true
         
         key : any
+            dict key value for stat being tracked
+        
+        value : any
+            value to append to stat dict
         
         tme : bool
+            set to true if logging by time or false if logging by step
         """
         tme_ = time.time()
         if tme == False and self.step % interval == 0:
@@ -507,12 +713,13 @@ class AIManager(Plots):
         Parameters
         ----------
         interval ; int
-        
+            interval in steps if tme is false or seconds if tme is true
         key : any
-        
+            dict key value for data being tracked
         value : np.array
-        
+            value to append to data dict
         tme ; bool
+            set to true if logging by time or false if logging by step
         """
         # data f_name = current time
         tme_ = time.time()
@@ -817,10 +1024,10 @@ if __name__ == '__main__':
         
         
         
-        log.track_data(60, 'outputs', test_out)
-        log.track_data(60, 'net.0.weight', model.state_dict()['net.0.weight'])
-        log.track_data(60, 'net.2.weight', model.state_dict()['net.2.weight'])
-        log.track_data(60, 'net.4.weight', model.state_dict()['net.4.weight'])
+        log.track_data(60, 'outputs', test_out, tme=False)
+        log.track_data(60, 'net.0.weight', model.state_dict()['net.0.weight'], tme=False)
+        log.track_data(60, 'net.2.weight', model.state_dict()['net.2.weight'], tme=False)
+        log.track_data(60, 'net.4.weight', model.state_dict()['net.4.weight'], tme=False)
         
         
         log.step += 1
