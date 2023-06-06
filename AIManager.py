@@ -71,7 +71,7 @@ class Plots():
         step = np.array(step, dtype=np.float16)
         data = np.array(data, dtype=np.float32)
         self.plot_data[key]['step'] = step
-        self.plot_data[key]['data'] = data.T
+        self.plot_data[key]['data'] = data.T      
     
     def add_image_data(self, key, posx, posy, scale=1, rot=0, mndx=None, cmap=None):
         if mndx == None:
@@ -237,6 +237,26 @@ class Plots():
 
 class AIManager(Plots):
     def __init__(self, root_dir='logs', fresh=False, run=None, batch_size=None):
+        """
+        Initailise AIManager
+        
+        Parameters
+        ----------
+        root_dir : str
+        root directory to store log files
+        
+        fresh : bool
+        start a fresh run in the root directory or continue with a previous session.
+        
+        run : str
+        continue with logging a previous log named in a file, the
+        default is the last run file automatically generated which
+        contains the name of the folder of the logging files
+        
+        batch_size : int
+        training batch size, default is none but it s required
+        
+        """
         self.models = {}
         self.optimizers = {}
         self.stats = {}
@@ -299,14 +319,39 @@ class AIManager(Plots):
         super(Plots, self).__init__()
 
     def add_optimizers(self, **optim):
+        """
+        Add optimizers being used in project
+        
+        Returns
+        -------
+        None
+        """
         for k, v in optim.items():
             self.optimizers[k] = v
     
     def add_models(self, **models):
+        """
+        Add model being used in project
+        
+        Returns
+        -------
+        None
+        """
         for k, v in models.items():
             self.models[k] = v
     
     def load_state(self, state=None):
+        """
+        Load saved state
+        
+        Parameters
+        ----------
+        
+        state : str
+        select a state to load. Logging directory is root/model_state.
+        If state is None it will try to load the latest from the logging
+        directory
+        """
         def load_model_states(data):
             if data != None:
                 for m in self.models.keys():
@@ -350,6 +395,15 @@ class AIManager(Plots):
                 print("State {} Not available".format(state))
     
     def save_state(self, interval, tme=False):
+        """
+        Save the state of the model and optimisers
+        
+        Parameters
+        ----------
+        interval : int
+        
+        tme : bool
+        """
         # state f_name = session start
         
         tme_ = time.time()
@@ -404,6 +458,17 @@ class AIManager(Plots):
             self.update = False
     
     def track_stat(self, interval, key, value, tme=False):
+        """
+        Track a stat
+        
+        Parameters
+        ----------
+        interval : int
+        
+        key : any
+        
+        tme : bool
+        """
         tme_ = time.time()
         if tme == False and self.step % interval == 0:
             self.stats[key] = self.stats.get(key, [])
@@ -423,6 +488,19 @@ class AIManager(Plots):
                 del self.stats[key]
     
     def track_data(self, interval, key, value, tme=False):
+        """
+        Track data in the form of numpy arrays
+        
+        Parameters
+        ----------
+        interval ; int
+        
+        key : any
+        
+        value : np.array
+        
+        tme ; bool
+        """
         # data f_name = current time
         tme_ = time.time()
         if tme == False and self.step % interval == 0:
@@ -437,6 +515,16 @@ class AIManager(Plots):
             self.track_stat_run_once = True
     
     def print_update(self, **extra):
+        """
+        Print stats and any extras to terminal for monitoring purposes
+        
+        Parameters
+        ----------
+        
+        Extras: 
+        add item for printing in the format of key=value eg:
+        print_update(a=1, b=2, c=3)
+        """
         print("="*38)
         print("Stats:")
         for k, v in self.stats.items():
@@ -460,59 +548,58 @@ class AIManager(Plots):
 
 #Utils
 def create_folders(f_name):
+    """
+    Create folders if parameter doesn't exist
+    
+    Parameters
+    ----------
+    f_name : String
+    Folder name
+    
+    Returns
+    -------
+    String
+    """
     if not os.path.exists(f_name):
         os.makedirs(f_name)
     return f_name
 
-def load_as_dict(f_name):
-    dict_ = {}
-    h = []
-    with open(f_name, 'r') as f:
-        h = f.readline().replace('\n', '').split(',')
-        for line in f.readlines():
-            items = line.replace('\n', '').split(',')
-            for ndx in range(len(items)):
-                try:
-                    item = float(items[ndx])
-                except ValueError:
-                    item = items[ndx]
-                    
-                dict_[h[ndx]] = dict_.get(h[ndx], [])
-                dict_[h[ndx]].append(item)
-    return dict_
-
-def save_as_csv(dict_, f_name, mode):
-    head = list(dict_.keys())
-    with open(f_name, mode) as f:
-        f.write(','.join(head)+'\n')
-        get = True
-        ndx = 0
-        while get == True:
-            line = []
-            for n, k in enumerate(head):
-                try:
-                    item = str(dict_[k][ndx])
-                    line.append(item)
-                    get = True
-                except TypeError:
-                    item = str(dict_[k])
-                    dict_[k] = [item]
-                    line.append(item)
-                    get = True
-                except IndexError:
-                    item = ""
-                    line.append(item)
-                    get = False
-            f.write(','.join(line)+'\n')
-            ndx += 1
-
 def str_time(ti):
+    """
+    convert time to string
+    
+    Returns
+    -------
+    String
+    """
     return '_'.join([str(i) for i in time.localtime(ti)])
 
 def int_time(ts):
+    """
+    convert time to integer
+    
+    Returns
+    -------
+    Integer
+    """
     return int(time.mktime(time.struct_time([int(i) for i in ts.split('_')])))
 
 def sort_txt(lst, ndx=None):
+    """
+    Sort text list human readable
+    
+    Parameters
+    ----------
+    lst : List
+    data to sort
+    
+    ndx : List
+    sort by index for multidimentional list
+    
+    Return
+    ------
+    List
+    """
     conv = lambda txt : int(txt) if txt.isdigit() else txt
     alnum = lambda key : [ conv(i) for i in re.findall('([a-z]+|[0-9]+)', key.lower())]
     sel = lambda key: [ alnum(key)[i] for i in ndx]
@@ -520,39 +607,103 @@ def sort_txt(lst, ndx=None):
         return sorted(lst, key=alnum)
     else:
         return sorted(lst, key=sel)
+#Not in use
+#def rec_get(data, ndx_lst,ndx=0):
+    #"""
+    #Recursivley traverse distionary to retrieve data
+    
+    #Parameters
+    #----------
+    #data : Dict
+    #Dictionary to retrieve data from
+    
+    #ndx_lst : List
+    #List of key values
+    #"""
+    #if ndx < len(ndx_lst)-1:
+        #data = data[ndx_lst[ndx]]
+        #ndx += 1
+        #return rec_get(data, ndx_lst, ndx)
+    #elif ndx == len(ndx_lst)-1:
+        #return data[ndx_lst[ndx]]
 
-def rec_get(data, ndx_lst,ndx=0):
-    if ndx < len(ndx_lst)-1:
-        data = data[ndx_lst[ndx]]
-        ndx += 1
-        return rec_get(data, ndx_lst, ndx)
-    elif ndx == len(ndx_lst)-1:
-        return data[ndx_lst[ndx]]
+#def rec_set(data, ndx_lst, val, ndx=0):
+    #if ndx < len(ndx_lst)-1:
+        #data = data[ndx_lst[ndx]]
+        #ndx += 1
+        #rec_set(data, ndx_lst, ndx)
+    #elif ndx == len(ndx_lst)-1:
+        #data[ndx_lst[ndx]] = val
 
-def rec_set(data, ndx_lst, val, ndx=0):
-    if ndx < len(ndx_lst)-1:
-        data = data[ndx_lst[ndx]]
-        ndx += 1
-        rec_set(data, ndx_lst, ndx)
-    elif ndx == len(ndx_lst)-1:
-        data[ndx_lst[ndx]] = val
-
-def sync_steps(steps):
-    synced = [[0 for i in steps]]
-    cnts = [1 for i in steps]
-    inc = None
-    while inc != -1:
-        val = 1e10
-        inc = -1
+#def sync_steps(steps):
+    #synced = [[0 for i in steps]]
+    #cnts = [1 for i in steps]
+    #inc = None
+    #while inc != -1:
+        #val = 1e10
+        #inc = -1
         #synced.append([steps[i][cnts[i]] for i in range(len(cnts))])
-        synced.append([cnts[i] for i in range(len(cnts))])
-        for i in range(len(steps)):
-            if cnts[i] < len(steps[i])-1:
-                if steps[i][cnts[i]] < val:
-                    val = steps[i][cnts[i]]
-                    inc = i
-        cnts[inc] += 1
-    return synced
+        #synced.append([cnts[i] for i in range(len(cnts))])
+        #for i in range(len(steps)):
+            #if cnts[i] < len(steps[i])-1:
+                #if steps[i][cnts[i]] < val:
+                    #val = steps[i][cnts[i]]
+                    #inc = i
+        #cnts[inc] += 1
+    #return synced
+
+#def load_as_dict(f_name):
+    #dict_ = {}
+    #h = []
+    #with open(f_name, 'r') as f:
+        #h = f.readline().replace('\n', '').split(',')
+        #for line in f.readlines():
+            #items = line.replace('\n', '').split(',')
+            #for ndx in range(len(items)):
+                #try:
+                    #item = float(items[ndx])
+                #except ValueError:
+                    #item = items[ndx]
+                    
+                #dict_[h[ndx]] = dict_.get(h[ndx], [])
+                #dict_[h[ndx]].append(item)
+    #return dict_
+
+#def save_as_csv(dict_, f_name, mode):
+    #"""
+    #Save dict as csv
+    
+    #Parameters
+    #----------
+    #dict : dict
+    
+    #f_name : str
+    
+    #mode : str
+    #"""
+    #head = list(dict_.keys())
+    #with open(f_name, mode) as f:
+        #f.write(','.join(head)+'\n')
+        #get = True
+        #ndx = 0
+        #while get == True:
+            #line = []
+            #for n, k in enumerate(head):
+                #try:
+                    #item = str(dict_[k][ndx])
+                    #line.append(item)
+                    #get = True
+                #except TypeError:
+                    #item = str(dict_[k])
+                    #dict_[k] = [item]
+                    #line.append(item)
+                    #get = True
+                #except IndexError:
+                    #item = ""
+                    #line.append(item)
+                    #get = False
+            #f.write(','.join(line)+'\n')
+            #ndx += 1
 
 if __name__ == '__main__':
     import torch
