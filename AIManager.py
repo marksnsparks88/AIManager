@@ -71,7 +71,20 @@ class Plots():
         step = np.array(step, dtype=np.float16)
         data = np.array(data, dtype=np.float32)
         self.plot_data[key]['step'] = step
-        self.plot_data[key]['data'] = data.T      
+        self.plot_data[key]['data'] = data.T
+        
+    def plot_stats(self, save=False):
+        stats = [i for i in self.plot_data.keys()]
+        self.pax.clear()
+        for stat in stats:
+            for dat in range(len(self.plot_data[stat]['data'])):
+                self.pax.plot(self.plot_data[stat]['step'], self.plot_data[stat]['data'][dat])
+            
+        if save == True:
+            f_name = self.plots+'-'.join(stats)
+            self.pfig.savefig(f_name)
+            
+        self.pfig.show()       
     
     def add_image_data(self, key, posx, posy, scale=1, rot=0, mndx=None, cmap=None):
         if mndx == None:
